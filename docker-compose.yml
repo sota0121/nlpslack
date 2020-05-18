@@ -1,0 +1,13 @@
+version: '3'
+services:
+  python3:
+    restart: always
+    build: .
+    container_name: 'nlpslack'
+    working_dir: '/root/dev/'
+    tty: true
+    ports:
+        - "8888:8000"
+    command: /bin/bash
+    volumes: 
+        - ./:/root/dev/
