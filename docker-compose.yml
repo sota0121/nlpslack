@@ -8,6 +8,6 @@ services:
     tty: true
     ports:
         - "8888:8000"
-    command: /bin/bash
+    command: bash
     volumes: 
         - ./:/root/dev/
