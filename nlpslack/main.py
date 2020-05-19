@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 import slackapp as sa
 import db
+import sys
+import argparse
 
 
 CREDENTIALS_PATH = '../data/conf/credentials.json'
@@ -44,5 +46,26 @@ def main():
     #db.bq_test()
 
 
+'''
+*** Flow ***
+IN  > python main.py 1 --term lw
+PROC> - get info via slack api (require: credentials.json)
+OUT > load slack info (channels, users, messages)
+OUT > select NOT target channels' number (sep space)
+OUT > 0. general
+OUT > 1. random
+OUT > 2. newbie ...
+IN  > 0 1
+OUT > Target channels: newbie/...
+PROC> save target channels as target_channels.csv
+OUT > cleaning messages ...
+OUT > morphological analysis ...
+OUT > normalization ...
+OUT > stop word removal ...
+OUT > tf-idf scoring ...
+OUT > generate wordcloud images ...
+OUT > [wordcloud] ■■■■■----------- (6/13) <=tqdm
+OUT > terminate
+'''
 if __name__ == "__main__":
     main()
