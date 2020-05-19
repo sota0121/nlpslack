@@ -130,3 +130,6 @@ dmypy.json
 
 # My settings
 credentials.json
+channel_info.json
+messages_info.json
+user_info.json
