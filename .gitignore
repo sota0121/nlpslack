@@ -133,3 +133,5 @@ credentials.json
 channel_info.json
 messages_info.json
 user_info.json
+service_account.json
+.vscode/
