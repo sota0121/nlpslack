@@ -10,7 +10,13 @@ import pandas as pd
 #     :
 #   )
 # - *output
-#   {'w13': 0.89, 'w17': 0.76, 'w00': 0.54, ...}
+#   {
+#     'key0': {'w04': 0.89, 'w02': 0.76, 'w00': 0.54, ...},
+#     'key1': {'w09': 0.67, 'w06': 0.32, 'w07': 0.10, ...},
+#     'key2': {'w17': 0.77, 'w18': 0.45, 'w10': 0.28, ...},
+#      :
+#   }
+
 
 def extraction_important_words(grouped_docs: pd.DataFrame) -> dict:
     # calc tf-idf
