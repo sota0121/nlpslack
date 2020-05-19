@@ -2,8 +2,7 @@ import os
 import json
 from pathlib import Path
 import slackapp as sa
-from google.cloud import bigquery
-
+import db
 
 
 CREDENTIALS_PATH = '../data/conf/credentials.json'
@@ -30,23 +29,6 @@ def slack_msg_extraction(credentials_path: str, outdir: str) -> bool:
 
 
 # make message table with db and preprocessing
-def bq_test():
-    script_dir = str(Path(__file__).resolve().parent)
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = script_dir + '/../data/conf/service_account.json'
-    
-    client = bigquery.Client()
-
-    # Perform a query.
-    QUERY = (
-        'SELECT name FROM `bigquery-public-data.usa_names.usa_1910_2013` '
-        'WHERE state = "TX" '
-        'LIMIT 10')
-    query_job = client.query(QUERY)  # API request
-    rows = query_job.result()  # Waits for query to finish
-
-    for row in rows:
-        print(row.name)
-
 # cleaning with preprocessing
 # morphological_analysis  with preprocessing
 # normalization  with preprocessing
@@ -56,9 +38,10 @@ def bq_test():
 
 
 def main():
-    #ret = slack_msg_extraction(CREDENTIALS_PATH, RAWDATA_PATH)
-    #print(ret)
-    bq_test()
+    
+    ret = slack_msg_extraction(CREDENTIALS_PATH, RAWDATA_PATH)
+    print(ret)
+    #db.bq_test()
 
 
 if __name__ == "__main__":
