@@ -1,7 +1,7 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
 # tf-idf : one key given by one document
-# 
+#
 # - *input ... ndarray or pd.DataFrame
 #   ndarray(
 #    ('key0', 'w00 w01 w02 w03 w04 w05'),
@@ -23,22 +23,18 @@ def extraction_important_words(grouped_docs: pd.DataFrame) -> dict:
     tfidf_vectorizer = TfidfVectorizer(token_pattern=u'(?u)\\b\\w+\\b')
     bow_vec = tfidf_vectorizer.fit_transform(grouped_docs.values())
     bow_array = bow_vec.toarray()
-    bow_df = pd.DataFrame(
-            bow_array,
-            index=grouped_docs.keys(),
-            columns=tfidf_vectorizer.get_feature_names()
-        )
+    bow_df = pd.DataFrame(bow_array,
+                          index=grouped_docs.keys(),
+                          columns=tfidf_vectorizer.get_feature_names())
     # extract high score words -> dict
     score_word_dic = extract_high_score_words(
-        tfidf_vectorizer.get_feature_names(),
-        bow_df,
-        grouped_docs.keys()
-        )
+        tfidf_vectorizer.get_feature_names(), bow_df, grouped_docs.keys())
     return score_word_dic
 
 
-def extract_high_score_words(feat_names: list, bow_df: pd.DataFrame, keys: list) -> dict:
-   # > 行ごとにみていき、重要単語を抽出する(tfidf上位X個の単語)
+def extract_high_score_words(feat_names: list, bow_df: pd.DataFrame,
+                             keys: list) -> dict:
+    # > 行ごとにみていき、重要単語を抽出する(tfidf上位X個の単語)
     dict_important_words_by_key = {}
     for uid, (i, scores) in zip(keys, bow_df.iterrows()):
         # 当該ユーザーの単語・tfidfスコアのテーブルを作る
@@ -46,7 +42,8 @@ def extract_high_score_words(feat_names: list, bow_df: pd.DataFrame, keys: list)
         words_score_tbl['scores'] = scores
         words_score_tbl['words'] = feat_names
         # tfidfスコアで降順ソートする
-        words_score_tbl = words_score_tbl.sort_values('scores', ascending=False)
+        words_score_tbl = words_score_tbl.sort_values('scores',
+                                                      ascending=False)
         words_score_tbl = words_score_tbl.reset_index()
         # extract : tf-idf score > 0.001
         important_words = words_score_tbl.query('scores > 0.001')

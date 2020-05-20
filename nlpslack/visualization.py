@@ -18,11 +18,10 @@ def wordcloud_from_score(word_score_dic: dict, fontpath: str, outdir: str):
         keyname = str(key).replace('/', '-')
         outpath = outdir + '/' + keyname + '.png'
         # gen
-        wc = WordCloud(
-            background_color='white',
-            font_path=fontpath,
-            width=900, height=600,
-            collocations=False
-            )
+        wc = WordCloud(background_color='white',
+                       font_path=fontpath,
+                       width=900,
+                       height=600,
+                       collocations=False)
         wc.generate_from_frequencies(d_word_score)
         wc.to_file(outpath)

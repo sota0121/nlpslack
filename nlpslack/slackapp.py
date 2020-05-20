@@ -30,7 +30,9 @@ class SlackApp:
             json_data = response.json()
             if 'channels' in json_data.keys():
                 self.channels_info = json_data['channels']
-            with open(outdir + '/' + 'channel_info.json', 'w', encoding='utf-8') as f:
+            with open(outdir + '/' + 'channel_info.json',
+                      'w',
+                      encoding='utf-8') as f:
                 json.dump(self.channels_info, f, indent=4, ensure_ascii=False)
 
     def load_save_user_info(self, outdir: str):
@@ -41,7 +43,8 @@ class SlackApp:
             json_data = response.json()
             if 'members' in json_data.keys():
                 self.users_info = json_data['members']
-            with open(outdir + '/' + 'user_info.json', 'w', encoding='utf-8') as f:
+            with open(outdir + '/' + 'user_info.json', 'w',
+                      encoding='utf-8') as f:
                 json.dump(self.users_info, f, indent=4, ensure_ascii=False)
 
     def load_save_messages_info(self, outdir: str):
@@ -62,5 +65,6 @@ class SlackApp:
                 else:
                     msg_in_ch['messages'] = ''
                 self.messages_info.append(msg_in_ch)
-        with open(outdir + '/' + 'messages_info.json', 'w', encoding='utf-8') as f:
-            json.dump(self.messages_info, f, indent=4, ensure_ascii=False)  
+        with open(outdir + '/' + 'messages_info.json', 'w',
+                  encoding='utf-8') as f:
+            json.dump(self.messages_info, f, indent=4, ensure_ascii=False)
