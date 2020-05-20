@@ -9,6 +9,7 @@ import pandas as pd
 from preprocessing import clean_msg
 from preprocessing import MorphologicalAnalysis as manalyzer
 from tqdm import tqdm
+from preprocessing import normarize_text
 
 SCRIPT_DIR = str(Path(__file__).resolve().parent) + '/'
 CREDENTIALS_PATH = SCRIPT_DIR + '../data/conf/credentials.json'
@@ -75,14 +76,22 @@ def cleaning_msgs(msg_tbl: pd.DataFrame) -> pd.DataFrame:
 def manalyze_msgs(msg_tbl: pd.DataFrame) -> pd.DataFrame:
     ma = manalyzer()
     ser_msg = msg_tbl.msg
-    clean_msg_list = [
+    wakati_msg_list = [
         ma.get_wakati_str(str(m)) for m in tqdm(ser_msg, desc='[wakati]')
     ]
-    msg_tbl.msg = pd.Series(clean_msg_list)
+    msg_tbl.msg = pd.Series(wakati_msg_list)
     return msg_tbl
 
 
 # normalization  with preprocessing
+def normalize_msgs(msg_tbl: pd.DataFrame) -> pd.DataFrame:
+    ser_msg = msg_tbl.msg
+    norm_msg_list = [normarize_text(str(m)) for m in ser_msg]
+    msg_tbl.msg = pd.Series(norm_msg_list)
+    return msg_tbl
+
+
+
 # stop word removal  with preprocessing
 # important word extraction with features
 # make wordcloud with visualization
@@ -144,6 +153,10 @@ def main(mode: int, term: str, update_slack_info: int):
     # morphological analysis
     database.msg_table = manalyze_msgs(database.msg_table)
     print(database.msg_table.head(100))
+
+    # normalization
+    database.msg_table = normalize_msgs(database.msg_table)
+    print(database.msg_table.msg.head(100))
 
 
 if __name__ == "__main__":
