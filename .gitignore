@@ -135,3 +135,4 @@ messages_info.json
 user_info.json
 service_account.json
 .vscode/
+stopwords.txt

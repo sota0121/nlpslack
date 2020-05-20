@@ -10,6 +10,7 @@ from preprocessing import clean_msg
 from preprocessing import MorphologicalAnalysis as manalyzer
 from tqdm import tqdm
 from preprocessing import normarize_text
+from preprocessing import maybe_download, load_sw_definition, remove_sw_from_text
 
 SCRIPT_DIR = str(Path(__file__).resolve().parent) + '/'
 CREDENTIALS_PATH = SCRIPT_DIR + '../data/conf/credentials.json'
@@ -17,6 +18,7 @@ RAWDATA_PATH = SCRIPT_DIR + '../data/'
 CHANNEL_INFO_PATH = SCRIPT_DIR + '../data/channel_info.json'
 USER_INFO_PATH = SCRIPT_DIR + '../data/user_info.json'
 MESSAGE_INFO_PATH = SCRIPT_DIR + '../data/messages_info.json'
+STOPWORD_LIST_PATH = SCRIPT_DIR + '../data/stopwords.txt'
 
 
 # slack mesage extraction with slackapp
@@ -91,8 +93,19 @@ def normalize_msgs(msg_tbl: pd.DataFrame) -> pd.DataFrame:
     return msg_tbl
 
 
-
 # stop word removal  with preprocessing
+def rmsw_msgs(msg_tbl: pd.DataFrame) -> pd.DataFrame:
+    # load stop words list
+    maybe_download(STOPWORD_LIST_PATH)
+    stopwords = load_sw_definition(STOPWORD_LIST_PATH)
+
+    # remove stop words
+    ser_msg = msg_tbl.msg
+    rmsw_msg_list = [remove_sw_from_text(str(m), stopwords) for m in ser_msg]
+    msg_tbl.msg = pd.Series(rmsw_msg_list)
+    return msg_tbl
+
+
 # important word extraction with features
 # make wordcloud with visualization
 '''
@@ -156,6 +169,10 @@ def main(mode: int, term: str, update_slack_info: int):
 
     # normalization
     database.msg_table = normalize_msgs(database.msg_table)
+    print(database.msg_table.msg.head(100))
+
+    # stop word removal
+    database.msg_table = rmsw_msgs(database.msg_table)
     print(database.msg_table.msg.head(100))
 
 
