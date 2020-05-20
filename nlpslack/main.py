@@ -2,7 +2,7 @@ import os
 import json
 from pathlib import Path
 import slackapp as sa
-import db
+from db import Database
 import sys
 import argparse
 
@@ -95,7 +95,7 @@ def main(mode: int, term: str, update_slack_info: int):
         ret = slack_msg_extraction(CREDENTIALS_PATH, RAWDATA_PATH)
         if ret is not True:
             sys.exit(1)
-    #db.bq_test()
+
     # NOT target channels selection
     show_slack_channels(CHANNEL_INFO_PATH)
     print('----------------------------')
@@ -105,6 +105,16 @@ def main(mode: int, term: str, update_slack_info: int):
     target_chname_list = _slack_channels_list(CHANNEL_INFO_PATH,
                                               excluding=not_target_list)
     print(target_chname_list)
+
+    # make tables
+    usr_dict = _load_json_as_dict(USER_INFO_PATH)
+    ch_dict = _load_json_as_dict(CHANNEL_INFO_PATH)
+    msg_dict = _load_json_as_dict(MESSAGE_INFO_PATH)
+    database = Database()
+    database.mk_tables(usr_dict, ch_dict, msg_dict, target_chname_list)
+    print(database.usr_table.head(5))
+    print(database.ch_table.head(5))
+    print(database.msg_table.head(5))
 
 
 if __name__ == "__main__":
