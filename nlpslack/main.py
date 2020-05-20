@@ -6,8 +6,12 @@ import db
 import sys
 import argparse
 
-CREDENTIALS_PATH = '../data/conf/credentials.json'
-RAWDATA_PATH = '../data/'
+SCRIPT_DIR = str(Path(__file__).resolve().parent) + '/'
+CREDENTIALS_PATH = SCRIPT_DIR + '../data/conf/credentials.json'
+RAWDATA_PATH = SCRIPT_DIR + '../data/'
+CHANNEL_INFO_PATH = SCRIPT_DIR + '../data/channel_info.json'
+USER_INFO_PATH = SCRIPT_DIR + '../data/user_info.json'
+MESSAGE_INFO_PATH = SCRIPT_DIR + '../data/messages_info.json'
 
 
 # slack mesage extraction with slackapp
@@ -21,10 +25,38 @@ def slack_msg_extraction(credentials_path: str, outdir: str) -> bool:
     # load info from slack via slack api
     app = sa.SlackApp(credentials['channel_api_key'],
                       credentials['user_api_key'])
+    print('load slack info channels')
     app.load_save_channel_info(outdir)
+    print('load slack info users')
     app.load_save_user_info(outdir)
+    print('load slack info messages')
     app.load_save_messages_info(outdir)
     return True
+
+
+# load json as dict
+def _load_json_as_dict(fpath: str) -> dict:
+    with open(fpath, 'r', encoding='utf-8') as f:
+        _dict = json.load(f)
+    return _dict
+
+
+# show channels info
+def show_slack_channels(channel_info_path: str) -> bool:
+    ch_info_dict = _load_json_as_dict(channel_info_path)
+    ch_name_list = [x['name'] for x in ch_info_dict]
+    for i, ch_name in enumerate(ch_name_list):
+        print(i, ': ', ch_name)
+    return True
+
+
+def _slack_channels_list(channel_info_path: str, excluding: list):
+    ch_info_dict = _load_json_as_dict(channel_info_path)
+    ch_name_list = [x['name'] for x in ch_info_dict]
+    target_ch_list = [
+        ch for i, ch in enumerate(ch_name_list) if not i in excluding
+    ]
+    return target_ch_list
 
 
 # make message table with db and preprocessing
@@ -34,8 +66,6 @@ def slack_msg_extraction(credentials_path: str, outdir: str) -> bool:
 # stop word removal  with preprocessing
 # important word extraction with features
 # make wordcloud with visualization
-
-
 '''
 *** Flow ***
 IN  > python main.py 1 --term lw
@@ -59,14 +89,22 @@ OUT > terminate
 '''
 
 
-def main(mode: int, term: str):
-    # -------------------------------------------------
-    # -------------------------------------------------
-
-
-    ret = slack_msg_extraction(CREDENTIALS_PATH, RAWDATA_PATH)
-    print(ret)
+def main(mode: int, term: str, update_slack_info: int):
+    # get info via slack api (require: credentials.json)
+    if update_slack_info == 1:
+        ret = slack_msg_extraction(CREDENTIALS_PATH, RAWDATA_PATH)
+        if ret is not True:
+            sys.exit(1)
     #db.bq_test()
+    # NOT target channels selection
+    show_slack_channels(CHANNEL_INFO_PATH)
+    print('----------------------------')
+    not_targets = input('select NOT target channel numbers (sep space)')
+    not_target_list = not_targets.split(' ')
+    not_target_list = [int(i) for i in not_target_list]
+    target_chname_list = _slack_channels_list(CHANNEL_INFO_PATH,
+                                              excluding=not_target_list)
+    print(target_chname_list)
 
 
 if __name__ == "__main__":
@@ -80,6 +118,10 @@ if __name__ == "__main__":
     parser.add_argument("--term",
                         help="w: term is week, m: term is month",
                         type=str)
+    parser.add_argument("--us",
+                        help="update info via slack api, default:1",
+                        default=1,
+                        type=int)
     args = parser.parse_args()
 
     # ------------------------------------------------
@@ -94,8 +136,9 @@ if __name__ == "__main__":
         if (term != 'w') and (term != 'm'):
             print('invalid arg --term. please execute with -h opt.')
             sys.exit(1)
+    update_slack_info = args.us
 
     # ------------------------------------------------
     # main process
     # ------------------------------------------------
-    main(mode, term)
+    main(mode, term, update_slack_info)
