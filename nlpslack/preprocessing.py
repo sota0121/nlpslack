@@ -38,16 +38,13 @@ def clean_msg(msg: str) -> str:
 # -------------------------------------------------
 # morphological_analysis
 # -------------------------------------------------
-exc_part_of_speech = {
-    "名詞": ["非自立", "代名詞", "数"]
-}
+exc_part_of_speech = {"名詞": ["非自立", "代名詞", "数"]}
 inc_part_of_speech = {
     "名詞": ["サ変接続", "一般", "固有名詞"],
 }
 
 
 class MorphologicalAnalysis:
-
     def __init__(self):
         self.janome_tokenizer = Tokenizer()
 
@@ -72,7 +69,8 @@ class MorphologicalAnalysis:
         exclude/include_pos is like this
         {"名詞": ["非自立", "代名詞", "数"], "形容詞": ["xxx", "yyy"]}
         '''
-        tokens = self.janome_tokenizer.tokenize(line, stream=True)  # 省メモリの為generator
+        tokens = self.janome_tokenizer.tokenize(line,
+                                                stream=True)  # 省メモリの為generator
         extracted_words = []
         for token in tokens:
             part_of_speech0 = token.part_of_speech.split(',')[0]
@@ -131,14 +129,7 @@ def maybe_download(path: str):
         # Download the file from `url` and save it locally under `file_name`:
         urllib.request.urlretrieve(stopword_def_page_url, path)
     # stop word 追加分
-    sw_added_list = [
-        '-',
-        'ー',
-        'w',
-        'W',
-        'm',
-        '笑'
-    ]
+    sw_added_list = ['-', 'ー', 'w', 'W', 'm', '笑']
     sw_added_str = '\n'.join(sw_added_list)
     with open(path, 'a') as f:
         print(sw_added_str, file=f)
