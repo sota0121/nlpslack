@@ -17,13 +17,25 @@ class Database:
     def usr_table(self) -> pd.DataFrame():
         return self._usr_table
 
+    @usr_table.setter
+    def usr_table(self, value: pd.DataFrame):
+        self._usr_table = value     # setter
+
     @property
     def ch_table(self) -> pd.DataFrame():
         return self._ch_table
 
+    @ch_table.setter
+    def ch_table(self, value: pd.DataFrame):
+        self._ch_table = value     # setter
+
     @property
     def msg_table(self) -> pd.DataFrame():
         return self._msg_table
+
+    @msg_table.setter
+    def msg_table(self, value: pd.DataFrame):
+        self._msg_table = value     # setter
 
     # method
     def _mk_usr_table(self, usr_dict: dict) -> bool:

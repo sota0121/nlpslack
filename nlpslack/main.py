@@ -5,6 +5,8 @@ import slackapp as sa
 from db import Database
 import sys
 import argparse
+import pandas as pd
+from preprocessing import clean_msg
 
 SCRIPT_DIR = str(Path(__file__).resolve().parent) + '/'
 CREDENTIALS_PATH = SCRIPT_DIR + '../data/conf/credentials.json'
@@ -54,18 +56,24 @@ def _slack_channels_list(channel_info_path: str, excluding: list):
     ch_info_dict = _load_json_as_dict(channel_info_path)
     ch_name_list = [x['name'] for x in ch_info_dict]
     target_ch_list = [
-        ch for i, ch in enumerate(ch_name_list) if not i in excluding
+        ch for i, ch in enumerate(ch_name_list) if i not in excluding
     ]
     return target_ch_list
 
 
-# make message table with db and preprocessing
 # cleaning with preprocessing
+def cleaning_msgs(msg_tbl: pd.DataFrame) -> pd.DataFrame:
+    ser_msg = msg_tbl.msg
+    clean_msg_list = [clean_msg(m) for m in ser_msg]
+    msg_tbl.msg = pd.Series(clean_msg_list)
+    return msg_tbl
+
 # morphological_analysis  with preprocessing
 # normalization  with preprocessing
 # stop word removal  with preprocessing
 # important word extraction with features
 # make wordcloud with visualization
+
 '''
 *** Flow ***
 IN  > python main.py 1 --term lw
@@ -112,9 +120,17 @@ def main(mode: int, term: str, update_slack_info: int):
     msg_dict = _load_json_as_dict(MESSAGE_INFO_PATH)
     database = Database()
     database.mk_tables(usr_dict, ch_dict, msg_dict, target_chname_list)
-    print(database.usr_table.head(5))
-    print(database.ch_table.head(5))
-    print(database.msg_table.head(5))
+    print(database.usr_table.head(2))
+    print(database.ch_table.head(2))
+    print(database.msg_table.head(100))
+    print('------')
+
+    # cleaning
+    database.msg_table = cleaning_msgs(database.msg_table)
+    print(database.msg_table.head(100))
+
+    # morphological analysis
+
 
 
 if __name__ == "__main__":
