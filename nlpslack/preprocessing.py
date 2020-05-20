@@ -38,15 +38,11 @@ def clean_msg(msg: str) -> str:
 # -------------------------------------------------
 # morphological_analysis
 # -------------------------------------------------
-exc_part_of_speech = {"名詞": ["非自立", "代名詞", "数"]}
-inc_part_of_speech = {
-    "名詞": ["サ変接続", "一般", "固有名詞"],
-}
-
-
 class MorphologicalAnalysis:
     def __init__(self):
         self.janome_tokenizer = Tokenizer()
+        self.exc_part_of_speech = {"名詞": ["非自立", "代名詞", "数"]}
+        self.inc_part_of_speech = {"名詞": ["サ変接続", "一般", "固有名詞"]}
 
     def tokenize_janome(self, line: str) -> list:
         # list of janome.tokenizer.Token
@@ -63,8 +59,7 @@ class MorphologicalAnalysis:
                         return True
         return False
 
-    def get_wakati_str(self, line: str, exclude_pos: dict,
-                       include_pos: dict) -> str:
+    def get_wakati_str(self, line: str) -> str:
         '''
         exclude/include_pos is like this
         {"名詞": ["非自立", "代名詞", "数"], "形容詞": ["xxx", "yyy"]}
@@ -77,12 +72,12 @@ class MorphologicalAnalysis:
             part_of_speech1 = token.part_of_speech.split(',')[1]
             # check for excluding words
             exists = self.exists_pos_in_dict(part_of_speech0, part_of_speech1,
-                                             exclude_pos)
+                                             self.exc_part_of_speech)
             if exists:
                 continue
             # check for including words
             exists = self.exists_pos_in_dict(part_of_speech0, part_of_speech1,
-                                             include_pos)
+                                             self.inc_part_of_speech)
             if not exists:
                 continue
             # append(表記揺れを吸収する為 表層形を取得)

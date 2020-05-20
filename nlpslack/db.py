@@ -19,7 +19,7 @@ class Database:
 
     @usr_table.setter
     def usr_table(self, value: pd.DataFrame):
-        self._usr_table = value     # setter
+        self._usr_table = value  # setter
 
     @property
     def ch_table(self) -> pd.DataFrame():
@@ -27,7 +27,7 @@ class Database:
 
     @ch_table.setter
     def ch_table(self, value: pd.DataFrame):
-        self._ch_table = value     # setter
+        self._ch_table = value  # setter
 
     @property
     def msg_table(self) -> pd.DataFrame():
@@ -35,7 +35,7 @@ class Database:
 
     @msg_table.setter
     def msg_table(self, value: pd.DataFrame):
-        self._msg_table = value     # setter
+        self._msg_table = value  # setter
 
     # method
     def _mk_usr_table(self, usr_dict: dict) -> bool:
