@@ -11,6 +11,8 @@ from preprocessing import MorphologicalAnalysis as manalyzer
 from tqdm import tqdm
 from preprocessing import normarize_text
 from preprocessing import maybe_download, load_sw_definition, remove_sw_from_text
+from features import TfIdf
+import pickle
 
 SCRIPT_DIR = str(Path(__file__).resolve().parent) + '/'
 CREDENTIALS_PATH = SCRIPT_DIR + '../data/conf/credentials.json'
@@ -19,6 +21,7 @@ CHANNEL_INFO_PATH = SCRIPT_DIR + '../data/channel_info.json'
 USER_INFO_PATH = SCRIPT_DIR + '../data/user_info.json'
 MESSAGE_INFO_PATH = SCRIPT_DIR + '../data/messages_info.json'
 STOPWORD_LIST_PATH = SCRIPT_DIR + '../data/stopwords.txt'
+TFIDF_SCORE_FILE_PATH = SCRIPT_DIR + '../data/tfidf_scores.json'
 
 
 # slack mesage extraction with slackapp
@@ -174,6 +177,17 @@ def main(mode: int, term: str, update_slack_info: int):
     # stop word removal
     database.msg_table = rmsw_msgs(database.msg_table)
     print(database.msg_table.msg.head(100))
+    
+    # tf-idf vectorization
+    dict_msgs_by_ = {}
+    if mode == 0:
+        dict_msgs_by_ = database.group_msgs_by_user()
+    elif mode == 1:
+        dict_msgs_by_ = database.group_msgs_by_term(term)
+    vectorizer = TfIdf()
+    score_word_dic = vectorizer.extraction_important_words(dict_msgs_by_)
+    with open(TFIDF_SCORE_FILE_PATH, 'w') as f:
+        json.dump(score_word_dic, f, ensure_ascii=False, indent=4)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,8 @@ from pathlib import Path
 import json
 import pandas as pd
 from google.cloud import bigquery
+from datetime import datetime, timedelta, timezone
+JST = timezone(timedelta(hours=+9), 'JST')
 
 
 class Database:
@@ -11,6 +13,7 @@ class Database:
         self._usr_table = pd.DataFrame()
         self._ch_table = pd.DataFrame()
         self._msg_table = pd.DataFrame()
+        self._JST = timezone(timedelta(hours=+9), 'JST')
 
     # property
     @property
@@ -74,6 +77,7 @@ class Database:
         msg_list = []
         uid_list = []
         ts_list = []
+        tmp_tbl = pd.DataFrame()
         for msg_ditem in msg_dict:
             if 'channel_id' in msg_ditem.keys():
                 ch_id = msg_ditem['channel_id']
@@ -92,7 +96,7 @@ class Database:
                 msg_list.append(msg['text'])
                 uid_list.append(msg['user'])  # botの場合はこのキーがない
                 ts_list.append(msg['ts'])
-        self._msg_table = pd.DataFrame({
+        tmp_tbl = pd.DataFrame({
             'ch_id': ch_id_list,
             'msg': msg_list,
             'uid': uid_list,
@@ -100,7 +104,11 @@ class Database:
         })
         # only save target channels
         target_chid_list = self._ch_table.ch_id.values.tolist()
-        self._msg_table = self._msg_table.query('ch_id in @target_chid_list')
+        tmp_tbl = tmp_tbl.query('ch_id in @target_chid_list')
+        # timestamp type str -> float
+        tmp_tbl.timestamp = tmp_tbl.timestamp.astype(float)
+        # sort by timestamp (last -> ago)
+        self._msg_table = tmp_tbl.sort_values('timestamp', ascending=False)
         return True
 
     # targets = list of targetting channel names
@@ -119,6 +127,59 @@ class Database:
         if ret is not True:
             return False
 
+    # grouping messages by users
+    def group_msgs_by_user(self) -> dict:
+        # 重複なしのuid一覧を取得
+        ser_uid_unique = self._msg_table.drop_duplicates(subset='uid').uid
+        # 重複なしuidごとにグルーピング(keyはuname)
+        dict_msgs_by_user = {}
+        for uid in ser_uid_unique:
+            # 当該uidに該当する全wktmsgを取得
+            extracted = self._msg_table.query('uid == @uid')
+            # uid に対応する uname 取得
+            target = self._usr_table.query('uid == @uid')
+            if target.shape[0] != 0:  # non-active user does not exist
+                uname = target.iloc[0]['uname']
+            # key, value を出力用の辞書に追加
+            dict_msgs_by_user[uname] = ' '.join(extracted.msg.dropna().values.tolist())        
+        return dict_msgs_by_user
+
+    # grouping messages by terms
+    def group_msgs_by_term(self, term: str) -> dict:
+        # set term
+        term_days = 8
+        if term == 'm':
+            term_days = 31
+        print('group messages every {0} days'.format(term_days))
+        # analyze timestamp
+        origin_ts_dt = datetime.fromtimestamp(0, self._JST)
+        now_in_sec = (datetime.now(self._JST) - origin_ts_dt).total_seconds()
+        interval_days = timedelta(days=term_days)
+        interval_seconds = interval_days.total_seconds()
+        oldest_timestamp = self._msg_table['timestamp'].min()
+        oldest_ts_dt = datetime.fromtimestamp(oldest_timestamp, self._JST)
+        oldest_ts_in_sec = (oldest_ts_dt - origin_ts_dt).total_seconds()
+        loop_num = (abs(now_in_sec - oldest_ts_in_sec) / interval_seconds) + 1
+        # extract by term
+        dict_msgs_by_term = {}
+        df_tmp = self._msg_table
+        now_tmp = now_in_sec
+        for i in range(int(loop_num)):
+            # make current term string
+            cur_term_s = 'recent_{0}'.format(str(i).zfill(3))
+            print(cur_term_s)
+            # current messages
+            self._msg_table_cur = df_tmp.query('@now_tmp - timestamp < @interval_seconds')
+            self._msg_table_other = df_tmp.query('@now_tmp - timestamp >= @interval_seconds')
+            # messages does not exist. break.
+            if self._msg_table_cur.shape[0] == 0:
+                break
+            # add current messages to dict
+            dict_msgs_by_term[cur_term_s] = ' '.join(self._msg_table_cur.msg.dropna().values.tolist())
+            # update temp value for next loop
+            now_tmp = now_tmp - interval_seconds
+            df_tmp = self._msg_table_other
+        return dict_msgs_by_term
 
 # ====== Future Database sample code ======
 # make message table with db and preprocessing
