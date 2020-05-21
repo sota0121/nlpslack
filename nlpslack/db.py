@@ -126,6 +126,10 @@ class Database:
         ret = self._mk_msg_table(msg_dict)
         if ret is not True:
             return False
+    
+    # drop nan in msg tables
+    def dropna_msg_table(self):
+        self._msg_table = self._msg_table.dropna(axis='index')
 
     # grouping messages by users
     def group_msgs_by_user(self) -> dict:
@@ -169,16 +173,16 @@ class Database:
             cur_term_s = 'recent_{0}'.format(str(i).zfill(3))
             print(cur_term_s)
             # current messages
-            self._msg_table_cur = df_tmp.query('@now_tmp - timestamp < @interval_seconds')
-            self._msg_table_other = df_tmp.query('@now_tmp - timestamp >= @interval_seconds')
+            _msg_table_cur = df_tmp.query('@now_tmp - timestamp < @interval_seconds')
+            _msg_table_other = df_tmp.query('@now_tmp - timestamp >= @interval_seconds')
             # messages does not exist. break.
-            if self._msg_table_cur.shape[0] == 0:
+            if _msg_table_cur.shape[0] == 0:
                 break
             # add current messages to dict
-            dict_msgs_by_term[cur_term_s] = ' '.join(self._msg_table_cur.msg.dropna().values.tolist())
+            dict_msgs_by_term[cur_term_s] = ' '.join(_msg_table_cur.msg.dropna().values.tolist())
             # update temp value for next loop
             now_tmp = now_tmp - interval_seconds
-            df_tmp = self._msg_table_other
+            df_tmp = _msg_table_other
         return dict_msgs_by_term
 
 # ====== Future Database sample code ======

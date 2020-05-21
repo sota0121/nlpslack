@@ -12,6 +12,7 @@ from tqdm import tqdm
 from preprocessing import normarize_text
 from preprocessing import maybe_download, load_sw_definition, remove_sw_from_text
 from features import TfIdf
+from visualization import wordcloud_from_score
 import pickle
 
 SCRIPT_DIR = str(Path(__file__).resolve().parent) + '/'
@@ -22,6 +23,8 @@ USER_INFO_PATH = SCRIPT_DIR + '../data/user_info.json'
 MESSAGE_INFO_PATH = SCRIPT_DIR + '../data/messages_info.json'
 STOPWORD_LIST_PATH = SCRIPT_DIR + '../data/stopwords.txt'
 TFIDF_SCORE_FILE_PATH = SCRIPT_DIR + '../data/tfidf_scores.json'
+WORDCLOUD_OUTROOT = SCRIPT_DIR + '../data/'
+WORDCLOUD_FONT_PATH = SCRIPT_DIR + '../data/res/rounded-l-mplus-1c-regular.ttf'
 
 
 # slack mesage extraction with slackapp
@@ -177,6 +180,12 @@ def main(mode: int, term: str, update_slack_info: int):
     # stop word removal
     database.msg_table = rmsw_msgs(database.msg_table)
     print(database.msg_table.msg.head(100))
+
+    # drop na
+    database.dropna_msg_table()
+
+    with open('msg_tbl.pickle', 'wb') as f:
+        pickle.dump(database.msg_table, f)
     
     # tf-idf vectorization
     dict_msgs_by_ = {}
@@ -188,6 +197,14 @@ def main(mode: int, term: str, update_slack_info: int):
     score_word_dic = vectorizer.extraction_important_words(dict_msgs_by_)
     with open(TFIDF_SCORE_FILE_PATH, 'w') as f:
         json.dump(score_word_dic, f, ensure_ascii=False, indent=4)
+    
+    # wordcloud from scores
+    dir_name = 'wc_by_usr' if mode == 0 else 'wc_by_term'
+    wc_outdir = WORDCLOUD_OUTROOT + dir_name
+    p = Path(wc_outdir)
+    if p.exists() is False:
+        p.mkdir()
+    wordcloud_from_score(score_word_dic, WORDCLOUD_FONT_PATH, wc_outdir)
 
 
 if __name__ == "__main__":
