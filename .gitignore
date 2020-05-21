@@ -136,3 +136,7 @@ user_info.json
 service_account.json
 .vscode/
 stopwords.txt
+data/tfidf_scores.json
+data/wc_by_term/
+data/wc_by_usr/
+msg_tbl.pickle
