@@ -26,7 +26,8 @@ USER_INFO_PATH = SCRIPT_DIR + '../data/user_info.json'
 MESSAGE_INFO_PATH = SCRIPT_DIR + '../data/messages_info.json'
 STOPWORD_LIST_PATH = SCRIPT_DIR + '../data/stopwords.txt'
 TFIDF_SCORE_FILE_PATH = SCRIPT_DIR + '../data/tfidf_scores.json'
-WORDCLOUD_OUTROOT = SCRIPT_DIR + '../data/'
+VECTORIZED_CONTENT_PATH = RAWDATA_PATH + 'content_features.json'
+WORDCLOUD_OUTROOT = RAWDATA_PATH
 WORDCLOUD_FONT_PATH = SCRIPT_DIR + '../data/res/rounded-l-mplus-1c-regular.ttf'
 
 
@@ -121,6 +122,7 @@ def _ParseArguments(argv):
         '-o',
         '--out',
         type=str,
+        default=VECTORIZED_CONTENT_PATH,
         help='output kvs path (*.json)')
     parser_vec.set_defaults(handler=_command_vec)
 
