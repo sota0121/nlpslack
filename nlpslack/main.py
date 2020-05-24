@@ -30,6 +30,11 @@ WORDCLOUD_OUTROOT = SCRIPT_DIR + '../data/'
 WORDCLOUD_FONT_PATH = SCRIPT_DIR + '../data/res/rounded-l-mplus-1c-regular.ttf'
 
 
+SUB_COMMAND_STR_WC = 'wc'
+SUB_COMMAND_STR_VEC = 'vec'
+SUB_COMMAND_STR_SEARCH = 'search'
+
+
 def main(argv):
     """Main program.
 
@@ -40,28 +45,32 @@ def main(argv):
     Returns:
       Zero on successful program termination, non-zero otherwise.
     """
-    args = _ParseArguments(argv)
+    args, parser = _ParseArguments(argv)
     if args.version:
         print('nlpslack {}'.format(__version__))
         return 0
     
-    
-    # mode = args.mode
-    # if (mode != 0) and (mode != 1):
-    #     print('invalid args mode. please execute with -h opt.')
-    #     sys.exit(1)
-    # term = args.term
-    # if mode == 1:
-    #     if (term != 'w') and (term != 'm'):
-    #         print('invalid arg --term. please execute with -h opt.')
-    #         sys.exit(1)
-    # update_slack_info = args.us
+    if hasattr(args, 'handler'):
+        args.handler(args)
+    else:
+        parser.print_help()
 
-    # ------------------------------------------------
-    # main process
-    # ------------------------------------------------
-    #main(mode, term, update_slack_info)
-    
+
+def _command_wc(args):
+    mode = args.mode
+    term = args.term
+    fs = args.fs
+    print('call sub-command wc', args)
+
+
+def _command_vec(args):
+    opath = args.out
+    print('call sub-command vec', args)
+
+
+def _command_search(args):
+    key_word = args.word
+    print('call sub-command search', args)
 
 
 def _ParseArguments(argv):
@@ -75,24 +84,58 @@ def _ParseArguments(argv):
       An object containing the arguments used to invoke the program.
     """
 
-    parser = argparse.ArgumentParser(description='nlp sandbox with slack messages.')
+    parser = argparse.ArgumentParser(
+        description='nlp sandbox with slack messages.')
     parser.add_argument(
-      '-v',
-      '--version',
-      action='store_true',
-      help='show version number and exit')
-    
-    # parser.add_argument("mode",
-    #                     help="0: wordcloud by user, 1:wordcloud by term",
-    #                     type=int)
-    # parser.add_argument("--term",
-    #                     help="w: term is week, m: term is month",
-    #                     type=str)
-    # parser.add_argument("--us",
-    #                     help="update info via slack api, default:1",
-    #                     default=1,
-    #                     type=int)
-    return parser.parse_args(argv[1:])
+        '-v',
+        '--version',
+        action='store_true',
+        help='show version number and exit')
+    parser.add_argument(
+        '-fs',
+        default=1,
+        type=int,
+        help='if fetch slack info or not (default: 1)')
+
+    subparsers = parser.add_subparsers(help='sub-command help')
+
+    # create the parser for the "wc" command
+    parser_wc = subparsers.add_parser(
+        SUB_COMMAND_STR_WC,
+        help='Generate wordcloud image')
+    parser_wc.add_argument(
+        'mode',
+        type=str,
+        help='u: each user, t:each term (weekly or monthly)')
+    parser_wc.add_argument(
+        '-t',
+        '--term',
+        help='w: weekly, m: monthly')
+    parser_wc.set_defaults(handler=_command_wc)
+
+    # create the parser for the "vec" command
+    parser_vec = subparsers.add_parser(
+        SUB_COMMAND_STR_VEC,
+        help="Vectorize the content of each user's post and save as KVS")
+    parser_vec.add_argument(
+        '-o',
+        '--out',
+        type=str,
+        help='output kvs path (*.json)')
+    parser_vec.set_defaults(handler=_command_vec)
+
+    # create the parser for the "search" command
+    parser_search = subparsers.add_parser(
+        SUB_COMMAND_STR_SEARCH,
+        help='Recommend users who are interested in a given word')
+    parser_search.add_argument(
+        '-w',
+        '--word',
+        type=str,
+        help="given word")
+    parser_search.set_defaults(handler=_command_search)
+
+    return parser.parse_args(argv[1:]), parser
 
 
 # slack mesage extraction with slackapp
