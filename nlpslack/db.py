@@ -126,7 +126,7 @@ class Database:
         ret = self._mk_msg_table(msg_dict)
         if ret is not True:
             return False
-    
+
     # drop nan in msg tables
     def dropna_msg_table(self):
         self._msg_table = self._msg_table.dropna(axis='index')
@@ -145,7 +145,8 @@ class Database:
             if target.shape[0] != 0:  # non-active user does not exist
                 uname = target.iloc[0]['uname']
             # key, value を出力用の辞書に追加
-            dict_msgs_by_user[uname] = ' '.join(extracted.msg.dropna().values.tolist())        
+            dict_msgs_by_user[uname] = ' '.join(
+                extracted.msg.dropna().values.tolist())
         return dict_msgs_by_user
 
     # grouping messages by terms
@@ -173,17 +174,21 @@ class Database:
             cur_term_s = 'recent_{0}'.format(str(i).zfill(3))
             print(cur_term_s)
             # current messages
-            _msg_table_cur = df_tmp.query('@now_tmp - timestamp < @interval_seconds')
-            _msg_table_other = df_tmp.query('@now_tmp - timestamp >= @interval_seconds')
+            _msg_table_cur = df_tmp.query(
+                '@now_tmp - timestamp < @interval_seconds')
+            _msg_table_other = df_tmp.query(
+                '@now_tmp - timestamp >= @interval_seconds')
             # messages does not exist. break.
             if _msg_table_cur.shape[0] == 0:
                 break
             # add current messages to dict
-            dict_msgs_by_term[cur_term_s] = ' '.join(_msg_table_cur.msg.dropna().values.tolist())
+            dict_msgs_by_term[cur_term_s] = ' '.join(
+                _msg_table_cur.msg.dropna().values.tolist())
             # update temp value for next loop
             now_tmp = now_tmp - interval_seconds
             df_tmp = _msg_table_other
         return dict_msgs_by_term
+
 
 # ====== Future Database sample code ======
 # make message table with db and preprocessing

@@ -186,7 +186,7 @@ def main(mode: int, term: str, update_slack_info: int):
 
     with open('msg_tbl.pickle', 'wb') as f:
         pickle.dump(database.msg_table, f)
-    
+
     # tf-idf vectorization
     dict_msgs_by_ = {}
     if mode == 0:
@@ -197,7 +197,7 @@ def main(mode: int, term: str, update_slack_info: int):
     score_word_dic = vectorizer.extraction_important_words(dict_msgs_by_)
     with open(TFIDF_SCORE_FILE_PATH, 'w') as f:
         json.dump(score_word_dic, f, ensure_ascii=False, indent=4)
-    
+
     # wordcloud from scores
     dir_name = 'wc_by_usr' if mode == 0 else 'wc_by_term'
     wc_outdir = WORDCLOUD_OUTROOT + dir_name
