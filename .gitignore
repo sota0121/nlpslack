@@ -140,3 +140,6 @@ data/tfidf_scores.json
 data/wc_by_term/
 data/wc_by_usr/
 msg_tbl.pickle
+data/model/dataset/
+data/model/wiki.model.trainables.syn1neg.npy
+data/model/wiki.model.wv.vectors.npy
