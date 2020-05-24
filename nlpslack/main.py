@@ -52,9 +52,10 @@ def main(argv):
         return 0
     
     if hasattr(args, 'handler'):
-        args.handler(args)
+        return args.handler(args)
     else:
         parser.print_help()
+        return 1
 
 
 def _command_wc(args):
@@ -63,15 +64,86 @@ def _command_wc(args):
     fs = args.fs
     print('call sub-command wc', args)
 
+    # get info via slack api (require: credentials.json)
+    if fs == 1:
+        ret = slack_msg_extraction(CREDENTIALS_PATH, RAWDATA_PATH)
+        if ret is not True:
+            sys.exit(1)
 
-def _command_vec(args):
+    # NOT target channels selection
+    show_slack_channels(CHANNEL_INFO_PATH)
+    print('----------------------------')
+    not_targets = input('select NOT target channel numbers (sep space)')
+    not_target_list = not_targets.split(' ')
+    not_target_list = [int(i) for i in not_target_list]
+    target_chname_list = _slack_channels_list(CHANNEL_INFO_PATH,
+                                              excluding=not_target_list)
+    print(target_chname_list)
+
+    # make tables
+    usr_dict = _load_json_as_dict(USER_INFO_PATH)
+    ch_dict = _load_json_as_dict(CHANNEL_INFO_PATH)
+    msg_dict = _load_json_as_dict(MESSAGE_INFO_PATH)
+    database = Database()
+    database.mk_tables(usr_dict, ch_dict, msg_dict, target_chname_list)
+    print(database.usr_table.head(2))
+    print(database.ch_table.head(2))
+    print(database.msg_table.head(100))
+    print('------')
+
+    # cleaning
+    database.msg_table = cleaning_msgs(database.msg_table)
+    print(database.msg_table.head(100))
+
+    # morphological analysis
+    database.msg_table = manalyze_msgs(database.msg_table)
+    print(database.msg_table.head(100))
+
+    # normalization
+    database.msg_table = normalize_msgs(database.msg_table)
+    print(database.msg_table.msg.head(100))
+
+    # stop word removal
+    database.msg_table = rmsw_msgs(database.msg_table)
+    print(database.msg_table.msg.head(100))
+
+    # drop na
+    database.dropna_msg_table()
+
+    with open('msg_tbl.pickle', 'wb') as f:
+        pickle.dump(database.msg_table, f)
+
+    # tf-idf vectorization
+    dict_msgs_by_ = {}
+    if mode == 'u':
+        dict_msgs_by_ = database.group_msgs_by_user()
+    elif mode == 't':
+        dict_msgs_by_ = database.group_msgs_by_term(term)
+    vectorizer = TfIdf()
+    score_word_dic = vectorizer.extraction_important_words(dict_msgs_by_)
+    with open(TFIDF_SCORE_FILE_PATH, 'w') as f:
+        json.dump(score_word_dic, f, ensure_ascii=False, indent=4)
+
+    # wordcloud from scores
+    dir_name = 'wc_by_usr' if mode == 0 else 'wc_by_term'
+    wc_outdir = WORDCLOUD_OUTROOT + dir_name
+    p = Path(wc_outdir)
+    if p.exists() is False:
+        p.mkdir()
+    wordcloud_from_score(score_word_dic, WORDCLOUD_FONT_PATH, wc_outdir)
+    return 0
+
+
+def _command_vec(args) -> int:
     opath = args.out
     print('call sub-command vec', args)
+    return 0
 
 
-def _command_search(args):
+def _command_search(args) -> int:
     key_word = args.word
     print('call sub-command search', args)
+    return 0
 
 
 def _ParseArguments(argv):
@@ -248,76 +320,6 @@ OUT > generate wordcloud images ...
 OUT > [wordcloud] ■■■■■----------- (6/13) <=tqdm
 OUT > terminate
 '''
-
-
-# def main(mode: int, term: str, update_slack_info: int):
-#     # get info via slack api (require: credentials.json)
-#     if update_slack_info == 1:
-#         ret = slack_msg_extraction(CREDENTIALS_PATH, RAWDATA_PATH)
-#         if ret is not True:
-#             sys.exit(1)
-
-#     # NOT target channels selection
-#     show_slack_channels(CHANNEL_INFO_PATH)
-#     print('----------------------------')
-#     not_targets = input('select NOT target channel numbers (sep space)')
-#     not_target_list = not_targets.split(' ')
-#     not_target_list = [int(i) for i in not_target_list]
-#     target_chname_list = _slack_channels_list(CHANNEL_INFO_PATH,
-#                                               excluding=not_target_list)
-#     print(target_chname_list)
-
-#     # make tables
-#     usr_dict = _load_json_as_dict(USER_INFO_PATH)
-#     ch_dict = _load_json_as_dict(CHANNEL_INFO_PATH)
-#     msg_dict = _load_json_as_dict(MESSAGE_INFO_PATH)
-#     database = Database()
-#     database.mk_tables(usr_dict, ch_dict, msg_dict, target_chname_list)
-#     print(database.usr_table.head(2))
-#     print(database.ch_table.head(2))
-#     print(database.msg_table.head(100))
-#     print('------')
-
-#     # cleaning
-#     database.msg_table = cleaning_msgs(database.msg_table)
-#     print(database.msg_table.head(100))
-
-#     # morphological analysis
-#     database.msg_table = manalyze_msgs(database.msg_table)
-#     print(database.msg_table.head(100))
-
-#     # normalization
-#     database.msg_table = normalize_msgs(database.msg_table)
-#     print(database.msg_table.msg.head(100))
-
-#     # stop word removal
-#     database.msg_table = rmsw_msgs(database.msg_table)
-#     print(database.msg_table.msg.head(100))
-
-#     # drop na
-#     database.dropna_msg_table()
-
-#     with open('msg_tbl.pickle', 'wb') as f:
-#         pickle.dump(database.msg_table, f)
-
-#     # tf-idf vectorization
-#     dict_msgs_by_ = {}
-#     if mode == 0:
-#         dict_msgs_by_ = database.group_msgs_by_user()
-#     elif mode == 1:
-#         dict_msgs_by_ = database.group_msgs_by_term(term)
-#     vectorizer = TfIdf()
-#     score_word_dic = vectorizer.extraction_important_words(dict_msgs_by_)
-#     with open(TFIDF_SCORE_FILE_PATH, 'w') as f:
-#         json.dump(score_word_dic, f, ensure_ascii=False, indent=4)
-
-#     # wordcloud from scores
-#     dir_name = 'wc_by_usr' if mode == 0 else 'wc_by_term'
-#     wc_outdir = WORDCLOUD_OUTROOT + dir_name
-#     p = Path(wc_outdir)
-#     if p.exists() is False:
-#         p.mkdir()
-#     wordcloud_from_score(score_word_dic, WORDCLOUD_FONT_PATH, wc_outdir)
 
 
 def run_main():
