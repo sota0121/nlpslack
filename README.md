@@ -1,6 +1,14 @@
 # nlpslack
 
-This is nlp toolkit for messages on slack.
+## Description
+
+This is nlp sandbox with using slack messages.
+There are some functions bellow.
+
+- [x] Generate Wordcloud image each user
+- [x] Generate Wordcloud weekly or monthly image
+- [ ] Vectorize the content of each user's post and save as KVS
+- [ ] Recommend users who are interested in a given word
 
 ## Prerequisites
 
