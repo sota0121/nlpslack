@@ -10,6 +10,26 @@ There are some functions bellow.
 - [ ] Vectorize the content of each user's post and save as KVS
 - [ ] Recommend users who are interested in a given word
 
+## Features
+
+- [x] Get messages via Slack API (require: API key)
+- [x] Basic preparation
+  - cleaning
+  - morphological analysis
+  - normalization
+  - stop words removal
+- [x] Visualization
+  - Wordcloud
+- [x] Feature embedding
+  - Word2vec
+- [x] Weighting factor
+  - tf-idf
+- [ ] Similarity search
+  - with Word2vec
+  - with Doc2vec
+  - with Elasticsearch
+  - ... etc
+
 ## Prerequisites
 
 - install [Docker](https://docs.docker.com/get-docker/)
