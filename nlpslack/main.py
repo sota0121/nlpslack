@@ -12,8 +12,11 @@ from tqdm import tqdm
 from preprocessing import normarize_text
 from preprocessing import maybe_download, load_sw_definition, remove_sw_from_text
 from features import TfIdf
+from features import Word2Vector
 from visualization import wordcloud_from_score
 import pickle
+
+__version__ = '0.0.1'
 
 SCRIPT_DIR = str(Path(__file__).resolve().parent) + '/'
 CREDENTIALS_PATH = SCRIPT_DIR + '../data/conf/credentials.json'
@@ -25,6 +28,71 @@ STOPWORD_LIST_PATH = SCRIPT_DIR + '../data/stopwords.txt'
 TFIDF_SCORE_FILE_PATH = SCRIPT_DIR + '../data/tfidf_scores.json'
 WORDCLOUD_OUTROOT = SCRIPT_DIR + '../data/'
 WORDCLOUD_FONT_PATH = SCRIPT_DIR + '../data/res/rounded-l-mplus-1c-regular.ttf'
+
+
+def main(argv):
+    """Main program.
+
+    Arguments:
+      argv: command-line arguments, such as sys.argv
+      (including the program name in argv[0]).
+
+    Returns:
+      Zero on successful program termination, non-zero otherwise.
+    """
+    args = _ParseArguments(argv)
+    if args.version:
+        print('nlpslack {}'.format(__version__))
+        return 0
+    
+    
+    # mode = args.mode
+    # if (mode != 0) and (mode != 1):
+    #     print('invalid args mode. please execute with -h opt.')
+    #     sys.exit(1)
+    # term = args.term
+    # if mode == 1:
+    #     if (term != 'w') and (term != 'm'):
+    #         print('invalid arg --term. please execute with -h opt.')
+    #         sys.exit(1)
+    # update_slack_info = args.us
+
+    # ------------------------------------------------
+    # main process
+    # ------------------------------------------------
+    #main(mode, term, update_slack_info)
+    
+
+
+def _ParseArguments(argv):
+    """Parse the command line arguments.
+
+    Arguments:
+      argv: command-line arguments, such as sys.argv
+        (including the program name in argv[0]).
+
+    Returns:
+      An object containing the arguments used to invoke the program.
+    """
+
+    parser = argparse.ArgumentParser(description='nlp sandbox with slack messages.')
+    parser.add_argument(
+      '-v',
+      '--version',
+      action='store_true',
+      help='show version number and exit')
+    
+    # parser.add_argument("mode",
+    #                     help="0: wordcloud by user, 1:wordcloud by term",
+    #                     type=int)
+    # parser.add_argument("--term",
+    #                     help="w: term is week, m: term is month",
+    #                     type=str)
+    # parser.add_argument("--us",
+    #                     help="update info via slack api, default:1",
+    #                     default=1,
+    #                     type=int)
+    return parser.parse_args(argv[1:])
 
 
 # slack mesage extraction with slackapp
@@ -137,108 +205,79 @@ OUT > terminate
 '''
 
 
-def main(mode: int, term: str, update_slack_info: int):
-    # get info via slack api (require: credentials.json)
-    if update_slack_info == 1:
-        ret = slack_msg_extraction(CREDENTIALS_PATH, RAWDATA_PATH)
-        if ret is not True:
-            sys.exit(1)
+# def main(mode: int, term: str, update_slack_info: int):
+#     # get info via slack api (require: credentials.json)
+#     if update_slack_info == 1:
+#         ret = slack_msg_extraction(CREDENTIALS_PATH, RAWDATA_PATH)
+#         if ret is not True:
+#             sys.exit(1)
 
-    # NOT target channels selection
-    show_slack_channels(CHANNEL_INFO_PATH)
-    print('----------------------------')
-    not_targets = input('select NOT target channel numbers (sep space)')
-    not_target_list = not_targets.split(' ')
-    not_target_list = [int(i) for i in not_target_list]
-    target_chname_list = _slack_channels_list(CHANNEL_INFO_PATH,
-                                              excluding=not_target_list)
-    print(target_chname_list)
+#     # NOT target channels selection
+#     show_slack_channels(CHANNEL_INFO_PATH)
+#     print('----------------------------')
+#     not_targets = input('select NOT target channel numbers (sep space)')
+#     not_target_list = not_targets.split(' ')
+#     not_target_list = [int(i) for i in not_target_list]
+#     target_chname_list = _slack_channels_list(CHANNEL_INFO_PATH,
+#                                               excluding=not_target_list)
+#     print(target_chname_list)
 
-    # make tables
-    usr_dict = _load_json_as_dict(USER_INFO_PATH)
-    ch_dict = _load_json_as_dict(CHANNEL_INFO_PATH)
-    msg_dict = _load_json_as_dict(MESSAGE_INFO_PATH)
-    database = Database()
-    database.mk_tables(usr_dict, ch_dict, msg_dict, target_chname_list)
-    print(database.usr_table.head(2))
-    print(database.ch_table.head(2))
-    print(database.msg_table.head(100))
-    print('------')
+#     # make tables
+#     usr_dict = _load_json_as_dict(USER_INFO_PATH)
+#     ch_dict = _load_json_as_dict(CHANNEL_INFO_PATH)
+#     msg_dict = _load_json_as_dict(MESSAGE_INFO_PATH)
+#     database = Database()
+#     database.mk_tables(usr_dict, ch_dict, msg_dict, target_chname_list)
+#     print(database.usr_table.head(2))
+#     print(database.ch_table.head(2))
+#     print(database.msg_table.head(100))
+#     print('------')
 
-    # cleaning
-    database.msg_table = cleaning_msgs(database.msg_table)
-    print(database.msg_table.head(100))
+#     # cleaning
+#     database.msg_table = cleaning_msgs(database.msg_table)
+#     print(database.msg_table.head(100))
 
-    # morphological analysis
-    database.msg_table = manalyze_msgs(database.msg_table)
-    print(database.msg_table.head(100))
+#     # morphological analysis
+#     database.msg_table = manalyze_msgs(database.msg_table)
+#     print(database.msg_table.head(100))
 
-    # normalization
-    database.msg_table = normalize_msgs(database.msg_table)
-    print(database.msg_table.msg.head(100))
+#     # normalization
+#     database.msg_table = normalize_msgs(database.msg_table)
+#     print(database.msg_table.msg.head(100))
 
-    # stop word removal
-    database.msg_table = rmsw_msgs(database.msg_table)
-    print(database.msg_table.msg.head(100))
+#     # stop word removal
+#     database.msg_table = rmsw_msgs(database.msg_table)
+#     print(database.msg_table.msg.head(100))
 
-    # drop na
-    database.dropna_msg_table()
+#     # drop na
+#     database.dropna_msg_table()
 
-    with open('msg_tbl.pickle', 'wb') as f:
-        pickle.dump(database.msg_table, f)
+#     with open('msg_tbl.pickle', 'wb') as f:
+#         pickle.dump(database.msg_table, f)
 
-    # tf-idf vectorization
-    dict_msgs_by_ = {}
-    if mode == 0:
-        dict_msgs_by_ = database.group_msgs_by_user()
-    elif mode == 1:
-        dict_msgs_by_ = database.group_msgs_by_term(term)
-    vectorizer = TfIdf()
-    score_word_dic = vectorizer.extraction_important_words(dict_msgs_by_)
-    with open(TFIDF_SCORE_FILE_PATH, 'w') as f:
-        json.dump(score_word_dic, f, ensure_ascii=False, indent=4)
+#     # tf-idf vectorization
+#     dict_msgs_by_ = {}
+#     if mode == 0:
+#         dict_msgs_by_ = database.group_msgs_by_user()
+#     elif mode == 1:
+#         dict_msgs_by_ = database.group_msgs_by_term(term)
+#     vectorizer = TfIdf()
+#     score_word_dic = vectorizer.extraction_important_words(dict_msgs_by_)
+#     with open(TFIDF_SCORE_FILE_PATH, 'w') as f:
+#         json.dump(score_word_dic, f, ensure_ascii=False, indent=4)
 
-    # wordcloud from scores
-    dir_name = 'wc_by_usr' if mode == 0 else 'wc_by_term'
-    wc_outdir = WORDCLOUD_OUTROOT + dir_name
-    p = Path(wc_outdir)
-    if p.exists() is False:
-        p.mkdir()
-    wordcloud_from_score(score_word_dic, WORDCLOUD_FONT_PATH, wc_outdir)
+#     # wordcloud from scores
+#     dir_name = 'wc_by_usr' if mode == 0 else 'wc_by_term'
+#     wc_outdir = WORDCLOUD_OUTROOT + dir_name
+#     p = Path(wc_outdir)
+#     if p.exists() is False:
+#         p.mkdir()
+#     wordcloud_from_score(score_word_dic, WORDCLOUD_FONT_PATH, wc_outdir)
+
+
+def run_main():
+    sys.exit(main(sys.argv))
 
 
 if __name__ == "__main__":
-    # ------------------------------------------------
-    # set args
-    # ------------------------------------------------
-    parser = argparse.ArgumentParser()
-    parser.add_argument("mode",
-                        help="0: wordcloud by user, 1:wordcloud by term",
-                        type=int)
-    parser.add_argument("--term",
-                        help="w: term is week, m: term is month",
-                        type=str)
-    parser.add_argument("--us",
-                        help="update info via slack api, default:1",
-                        default=1,
-                        type=int)
-    args = parser.parse_args()
-
-    # ------------------------------------------------
-    # parse args
-    # ------------------------------------------------
-    mode = args.mode
-    if (mode != 0) and (mode != 1):
-        print('invalid args mode. please execute with -h opt.')
-        sys.exit(1)
-    term = args.term
-    if mode == 1:
-        if (term != 'w') and (term != 'm'):
-            print('invalid arg --term. please execute with -h opt.')
-            sys.exit(1)
-    update_slack_info = args.us
-
-    # ------------------------------------------------
-    # main process
-    # ------------------------------------------------
-    main(mode, term, update_slack_info)
+    run_main()
