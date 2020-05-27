@@ -53,7 +53,7 @@ def main(argv):
     if args.version:
         print('nlpslack {}'.format(__version__))
         return 0
-    
+
     if hasattr(args, 'handler'):
         return args.handler(args)
     else:
@@ -73,9 +73,12 @@ def _command_wc(args):
     mode = args.mode
     term = args.term
     fs = args.fs
-    print('call sub-command wc', args)
+    print('Start to generate wordcloud')
+    print('Setting: ', args)
 
     # Need Slack raw info for all process (if only fetch flg==1)
+    print('Fetch raw info via Slack API')
+    print('Save raw info as json. See ', RAWDATA_PATH)
     if fs == 1:
         ret = slack_msg_extraction(CREDENTIALS_PATH, RAWDATA_PATH)
         if ret is not True:
@@ -89,31 +92,44 @@ def _command_wc(args):
     not_target_list = [int(i) for i in not_target_list]
     target_chname_list = _slack_channels_list(CHANNEL_INFO_PATH,
                                               excluding=not_target_list)
-    print(target_chname_list)
+    target_ch_names = "\n".join(target_chname_list)
+    print(target_ch_names)
 
     # make it easy to analyze with tidy tables
+    print('Convert raw info to tidy table')
     usr_dict = _load_json_as_dict(USER_INFO_PATH)
     ch_dict = _load_json_as_dict(CHANNEL_INFO_PATH)
     msg_dict = _load_json_as_dict(MESSAGE_INFO_PATH)
     database = Database()
     database.mk_tables(usr_dict, ch_dict, msg_dict, target_chname_list)
-    
+
     # Removing noise as preparation
+    print('Clean messages')
     database.msg_table = cleaning_msgs(database.msg_table)
-    
+
     # Get wakati for analysis each words
+    print('Make messages wakati')
     database.msg_table = manalyze_msgs(database.msg_table)
-    
+
     # Reduce notation variant for improvment accuracy
+    print('Normalize messages')
     database.msg_table = normalize_msgs(database.msg_table)
-    
+
     # Remove very general words for improvment accuracy
+    print('Remove stopwords')
     database.msg_table = rmsw_msgs(database.msg_table)
-    
+
     # After preprocessing, some messages come NaN
+    print('Drop NaN (==message) records')
     database.dropna_msg_table()
 
+    _ShowTableRecords(database.usr_table)
+    _ShowTableRecords(database.ch_table)
+    _ShowTableRecords(database.msg_table, 10)
+
     # The more important words, the larger fonts on wordcloud
+    print('TfIdf scoring, and extract important words')
+    print('Save word-score dict as json. See ', TFIDF_SCORE_FILE_PATH)
     dict_msgs_by_ = {}
     if mode == 'u':
         dict_msgs_by_ = database.group_msgs_by_user()
@@ -130,6 +146,8 @@ def _command_wc(args):
     if p.exists() is False:
         p.mkdir()
     wordcloud_from_score(score_word_dic, WORDCLOUD_FONT_PATH, wc_outdir)
+    print('Generated and saved wordcloud images')
+    print('See ', wc_outdir)
     return 0
 
 
@@ -145,6 +163,10 @@ def _command_search(args) -> int:
     return 0
 
 
+def _ShowTableRecords(tbl: pd.DataFrame, headline=5):
+    print(tbl.head(headline))
+
+
 def _ParseArguments(argv):
     """Parse the command line arguments.
 
@@ -158,54 +180,41 @@ def _ParseArguments(argv):
 
     parser = argparse.ArgumentParser(
         description='nlp sandbox with slack messages.')
-    parser.add_argument(
-        '-v',
-        '--version',
-        action='store_true',
-        help='show version number and exit')
-    parser.add_argument(
-        '-fs',
-        default=1,
-        type=int,
-        help='if fetch slack info or not (default: 1)')
+    parser.add_argument('-v',
+                        '--version',
+                        action='store_true',
+                        help='show version number and exit')
+    parser.add_argument('-fs',
+                        default=1,
+                        type=int,
+                        help='if fetch slack info or not (default: 1)')
 
     subparsers = parser.add_subparsers(help='sub-command help')
 
     # create the parser for the "wc" command
-    parser_wc = subparsers.add_parser(
-        SUB_COMMAND_STR_WC,
-        help='Generate wordcloud image')
+    parser_wc = subparsers.add_parser(SUB_COMMAND_STR_WC,
+                                      help='Generate wordcloud image')
     parser_wc.add_argument(
-        'mode',
-        type=str,
-        help='u: each user, t:each term (weekly or monthly)')
-    parser_wc.add_argument(
-        '-t',
-        '--term',
-        help='w: weekly, m: monthly')
+        'mode', type=str, help='u: each user, t:each term (weekly or monthly)')
+    parser_wc.add_argument('-t', '--term', help='w: weekly, m: monthly')
     parser_wc.set_defaults(handler=_command_wc)
 
     # create the parser for the "vec" command
     parser_vec = subparsers.add_parser(
         SUB_COMMAND_STR_VEC,
         help="Vectorize the content of each user's post and save as KVS")
-    parser_vec.add_argument(
-        '-o',
-        '--out',
-        type=str,
-        default=VECTORIZED_CONTENT_PATH,
-        help='output kvs path (*.json)')
+    parser_vec.add_argument('-o',
+                            '--out',
+                            type=str,
+                            default=VECTORIZED_CONTENT_PATH,
+                            help='output kvs path (*.json)')
     parser_vec.set_defaults(handler=_command_vec)
 
     # create the parser for the "search" command
     parser_search = subparsers.add_parser(
         SUB_COMMAND_STR_SEARCH,
         help='Recommend users who are interested in a given word')
-    parser_search.add_argument(
-        '-w',
-        '--word',
-        type=str,
-        help="given word")
+    parser_search.add_argument('-w', '--word', type=str, help="given word")
     parser_search.set_defaults(handler=_command_search)
 
     return parser.parse_args(argv[1:]), parser
