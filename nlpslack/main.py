@@ -97,33 +97,21 @@ def _command_wc(args):
     msg_dict = _load_json_as_dict(MESSAGE_INFO_PATH)
     database = Database()
     database.mk_tables(usr_dict, ch_dict, msg_dict, target_chname_list)
-    print(database.usr_table.head(2))
-    print(database.ch_table.head(2))
-    print(database.msg_table.head(100))
-    print('------')
-
+    
     # Removing noise as preparation
     database.msg_table = cleaning_msgs(database.msg_table)
-    print(database.msg_table.head(100))
-
+    
     # Get wakati for analysis each words
     database.msg_table = manalyze_msgs(database.msg_table)
-    print(database.msg_table.head(100))
-
+    
     # Reduce notation variant for improvment accuracy
     database.msg_table = normalize_msgs(database.msg_table)
-    print(database.msg_table.msg.head(100))
-
+    
     # Remove very general words for improvment accuracy
     database.msg_table = rmsw_msgs(database.msg_table)
-    print(database.msg_table.msg.head(100))
-
+    
     # After preprocessing, some messages come NaN
     database.dropna_msg_table()
-
-    # Snapshot preprocessed table for not repeat preprocessing
-    with open('msg_tbl.pickle', 'wb') as f:
-        pickle.dump(database.msg_table, f)
 
     # The more important words, the larger fonts on wordcloud
     dict_msgs_by_ = {}
