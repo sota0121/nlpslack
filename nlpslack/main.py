@@ -34,7 +34,6 @@ VECTORIZED_CONTENT_PATH = RAWDATA_PATH + 'content_features.json'
 WORDCLOUD_OUTROOT = RAWDATA_PATH
 WORDCLOUD_FONT_PATH = SCRIPT_DIR + '../data/res/rounded-l-mplus-1c-regular.ttf'
 
-
 SUB_COMMAND_STR_WC = 'wc'
 SUB_COMMAND_STR_VEC = 'vec'
 SUB_COMMAND_STR_SEARCH = 'search'
@@ -63,18 +62,26 @@ def main(argv):
 
 
 def _command_wc(args):
+    """Sub program: wordcloud
+
+    Arguments:
+        args: Parsed arguments
+
+    Returns:
+        Zero on successful program termination, non-zero otherwise.
+    """
     mode = args.mode
     term = args.term
     fs = args.fs
     print('call sub-command wc', args)
 
-    # get info via slack api (require: credentials.json)
+    # Need Slack raw info for all process (if only fetch flg==1)
     if fs == 1:
         ret = slack_msg_extraction(CREDENTIALS_PATH, RAWDATA_PATH)
         if ret is not True:
             sys.exit(1)
 
-    # NOT target channels selection
+    # User can select NOT target channel which analyze
     show_slack_channels(CHANNEL_INFO_PATH)
     print('----------------------------')
     not_targets = input('select NOT target channel numbers (sep space)')
@@ -84,7 +91,7 @@ def _command_wc(args):
                                               excluding=not_target_list)
     print(target_chname_list)
 
-    # make tables
+    # make it easy to analyze with tidy tables
     usr_dict = _load_json_as_dict(USER_INFO_PATH)
     ch_dict = _load_json_as_dict(CHANNEL_INFO_PATH)
     msg_dict = _load_json_as_dict(MESSAGE_INFO_PATH)
@@ -95,29 +102,30 @@ def _command_wc(args):
     print(database.msg_table.head(100))
     print('------')
 
-    # cleaning
+    # Removing noise as preparation
     database.msg_table = cleaning_msgs(database.msg_table)
     print(database.msg_table.head(100))
 
-    # morphological analysis
+    # Get wakati for analysis each words
     database.msg_table = manalyze_msgs(database.msg_table)
     print(database.msg_table.head(100))
 
-    # normalization
+    # Reduce notation variant for improvment accuracy
     database.msg_table = normalize_msgs(database.msg_table)
     print(database.msg_table.msg.head(100))
 
-    # stop word removal
+    # Remove very general words for improvment accuracy
     database.msg_table = rmsw_msgs(database.msg_table)
     print(database.msg_table.msg.head(100))
 
-    # drop na
+    # After preprocessing, some messages come NaN
     database.dropna_msg_table()
 
+    # Snapshot preprocessed table for not repeat preprocessing
     with open('msg_tbl.pickle', 'wb') as f:
         pickle.dump(database.msg_table, f)
 
-    # tf-idf vectorization
+    # The more important words, the larger fonts on wordcloud
     dict_msgs_by_ = {}
     if mode == 'u':
         dict_msgs_by_ = database.group_msgs_by_user()
@@ -128,7 +136,6 @@ def _command_wc(args):
     with open(TFIDF_SCORE_FILE_PATH, 'w') as f:
         json.dump(score_word_dic, f, ensure_ascii=False, indent=4)
 
-    # wordcloud from scores
     dir_name = 'wc_by_usr' if mode == 0 else 'wc_by_term'
     wc_outdir = WORDCLOUD_OUTROOT + dir_name
     p = Path(wc_outdir)
