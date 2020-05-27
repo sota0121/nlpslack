@@ -1,20 +1,24 @@
 import os
+import sys
 import json
+import argparse
 from pathlib import Path
+
+import pickle
+import pandas as pd
+from tqdm import tqdm
+
 import slackapp as sa
 from db import Database
-import sys
-import argparse
-import pandas as pd
 from preprocessing import clean_msg
 from preprocessing import MorphologicalAnalysis as manalyzer
-from tqdm import tqdm
 from preprocessing import normarize_text
-from preprocessing import maybe_download, load_sw_definition, remove_sw_from_text
+from preprocessing import maybe_download
+from preprocessing import load_sw_definition
+from preprocessing import remove_sw_from_text
 from features import TfIdf
 from features import Word2Vector
 from visualization import wordcloud_from_score
-import pickle
 
 __version__ = '0.0.1'
 
