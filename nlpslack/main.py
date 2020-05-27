@@ -79,7 +79,7 @@ def _command_wc(args):
     if fs == 1:
         ret = slack_msg_extraction(CREDENTIALS_PATH, RAWDATA_PATH)
         if ret is not True:
-            sys.exit(1)
+            return 1
 
     # User can select NOT target channel which analyze
     show_slack_channels(CHANNEL_INFO_PATH)
