@@ -140,7 +140,7 @@ def _command_wc(args):
     with open(TFIDF_SCORE_FILE_PATH, 'w') as f:
         json.dump(score_word_dic, f, ensure_ascii=False, indent=4)
 
-    dir_name = 'wc_by_usr' if mode == 0 else 'wc_by_term'
+    dir_name = 'wc_by_usr' if mode == 'u' else 'wc_by_term'
     wc_outdir = WORDCLOUD_OUTROOT + dir_name
     p = Path(wc_outdir)
     if p.exists() is False:
