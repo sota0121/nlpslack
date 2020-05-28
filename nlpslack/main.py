@@ -72,6 +72,7 @@ def _command_wc(args):
     """
     mode = args.mode
     term = args.term
+    startdate = args.start
     fs = args.fs
     print('Start to generate wordcloud')
     print('Setting: ', args)
@@ -134,7 +135,7 @@ def _command_wc(args):
     if mode == 'u':
         dict_msgs_by_ = database.group_msgs_by_user()
     elif mode == 't':
-        dict_msgs_by_ = database.group_msgs_by_term(term)
+        dict_msgs_by_ = database.group_msgs_by_term(term, startdate)
     vectorizer = TfIdf()
     score_word_dic = vectorizer.extraction_important_words(dict_msgs_by_)
     with open(TFIDF_SCORE_FILE_PATH, 'w') as f:
@@ -197,6 +198,8 @@ def _ParseArguments(argv):
     parser_wc.add_argument(
         'mode', type=str, help='u: each user, t:each term (weekly or monthly)')
     parser_wc.add_argument('-t', '--term', help='w: weekly, m: monthly')
+    parser_wc.add_argument(
+        '-s', '--start', help='Set date when start to count. fmt: YYYY-MM-DD')
     parser_wc.set_defaults(handler=_command_wc)
 
     # create the parser for the "vec" command
