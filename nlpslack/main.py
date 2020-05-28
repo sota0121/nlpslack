@@ -136,6 +136,8 @@ def _command_wc(args):
         dict_msgs_by_ = database.group_msgs_by_user()
     elif mode == 't':
         dict_msgs_by_ = database.group_msgs_by_term(term, startdate)
+    if dict_msgs_by_ is None:
+        return 1
     vectorizer = TfIdf()
     score_word_dic = vectorizer.extraction_important_words(dict_msgs_by_)
     with open(TFIDF_SCORE_FILE_PATH, 'w') as f:

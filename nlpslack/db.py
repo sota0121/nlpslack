@@ -164,12 +164,17 @@ class Database:
             print('startdate is not None')
             starttimestr = startdate + ' 00:00:00'
             try:
-                starttime = datetime.strptime(starttimestr,
+                starttime_tmp = datetime.strptime(starttimestr,
                                               "%Y-%m-%d %H:%M:%S")
             except ValueError as e:
                 print(e)
                 return None
-            starttime = starttime.astimezone(self._JST)
+            starttime_tmp = starttime_tmp.astimezone(self._JST)
+            # 指定可能な時刻は現在よりも昔の時刻のみとする
+            if starttime_tmp > starttime:
+                print('Set the time older than the current time')
+                return None
+            starttime = starttime_tmp
             print(starttime)
 
         # Decide interval len and loop num
