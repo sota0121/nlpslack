@@ -150,28 +150,53 @@ class Database:
         return dict_msgs_by_user
 
     # grouping messages by terms
-    def group_msgs_by_term(self, term: str) -> dict:
-        # set term
+    def group_msgs_by_term(self, term: str, startdate: str) -> dict:
+        # User can select term days (8 or 30 days)
         term_days = 8
         if term == 'm':
             term_days = 31
         print('group messages every {0} days'.format(term_days))
-        # analyze timestamp
+
+        # Decide time when it start to count ?
+        starttime = datetime.now(self._JST)
+        print(starttime)
+        if startdate is not None:
+            print('startdate is not None')
+            starttimestr = startdate + ' 00:00:00'
+            try:
+                starttime_tmp = datetime.strptime(starttimestr,
+                                              "%Y-%m-%d %H:%M:%S")
+            except ValueError as e:
+                print(e)
+                return None
+            starttime_tmp = starttime_tmp.astimezone(self._JST)
+            # 指定可能な時刻は現在よりも昔の時刻のみとする
+            if starttime_tmp > starttime:
+                print('Set the time older than the current time')
+                return None
+            starttime = starttime_tmp
+            print(starttime)
+
+        # Decide interval len and loop num
         origin_ts_dt = datetime.fromtimestamp(0, self._JST)
-        now_in_sec = (datetime.now(self._JST) - origin_ts_dt).total_seconds()
+        now_in_sec = (starttime - origin_ts_dt).total_seconds()
         interval_days = timedelta(days=term_days)
         interval_seconds = interval_days.total_seconds()
         oldest_timestamp = self._msg_table['timestamp'].min()
         oldest_ts_dt = datetime.fromtimestamp(oldest_timestamp, self._JST)
         oldest_ts_in_sec = (oldest_ts_dt - origin_ts_dt).total_seconds()
         loop_num = (abs(now_in_sec - oldest_ts_in_sec) / interval_seconds) + 1
+
         # extract by term
         dict_msgs_by_term = {}
         df_tmp = self._msg_table
         now_tmp = now_in_sec
+        start_date = starttime
+        end_date = starttime - interval_days
         for i in range(int(loop_num)):
             # make current term string
-            cur_term_s = 'recent_{0}'.format(str(i).zfill(3))
+            cur_term_s = start_date.strftime(
+                "%Y-%m-%d") + '_' + end_date.strftime("%Y-%m-%d")
             print(cur_term_s)
             # current messages
             _msg_table_cur = df_tmp.query(
@@ -187,6 +212,9 @@ class Database:
             # update temp value for next loop
             now_tmp = now_tmp - interval_seconds
             df_tmp = _msg_table_other
+            # update cache value
+            start_date = end_date
+            end_date = (start_date - interval_days)
         return dict_msgs_by_term
 
 
