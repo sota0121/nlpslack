@@ -10,7 +10,7 @@ Janome==0.3.10
 matplotlib==3.2.1
 numpy==1.18.4
 pandas==1.0.3
-Pillow==8.1.1
+Pillow==9.3.0
 pyflakes==2.1.1
 pytz==2020.1
 requests==2.23.0
