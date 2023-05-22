@@ -13,7 +13,7 @@ pandas==1.0.3
 Pillow==8.1.1
 pyflakes==2.1.1
 pytz==2020.1
-requests==2.23.0
+requests==2.31.0
 scikit-learn==0.22.2.post1
 tqdm==4.45.0
 wordcloud==1.6.0
